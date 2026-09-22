@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - NovaStore{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Page Header & Breadcrumb -->
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a href="{{ url_for('storefront') }}" class="text-decoration-none text-muted">Home</a></li>
+                <li class="breadcrumb-item active fw-semibold" aria-current="page">Checkout</li>
+            </ol>
+        </nav>
+        <h2 class="fw-extrabold text-dark mb-1">Complete Your Order</h2>
+        <p class="text-muted small">Enter your delivery details to finalize and initiate instant order tracking.</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left: Customer & Delivery Details Form -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+                <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                    <span class="badge bg-primary rounded-circle p-2 px-3 small">1</span>
+                    Shipping Information
+                </h5>
+
+                <form id="checkoutForm">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label for="customer_name" class="form-label small fw-semibold text-secondary">Full Name *</label>
+                            <input type="text" class="form-control rounded-3" id="customer_name" placeholder="John Doe" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="customer_email" class="form-label small fw-semibold text-secondary">Email Address * (For Tracking Updates)</label>
+                            <input type="email" class="form-control rounded-3" id="customer_email" placeholder="john.doe@example.com" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="customer_phone" class="form-label small fw-semibold text-secondary">Phone Number *</label>
+                            <input type="tel" class="form-control rounded-3" id="customer_phone" placeholder="+1 (555) 000-1234" required>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="shipping_address" class="form-label small fw-semibold text-secondary">Shipping Address *</label>
+                            <textarea class="form-control rounded-3" id="shipping_address" rows="3" placeholder="123 Blossom Street, Suite 4B, New York, NY 10001" required></textarea>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                        <span class="badge bg-primary rounded-circle p-2 px-3 small">2</span>
+                        Payment Method
+                    </h5>
+
+                    <div class="d-flex flex-column gap-3 mb-4">
+                        <label class="border rounded-3 p-3 d-flex align-items-center gap-3 cursor-pointer bg-light">
+                            <input type="radio" name="payment_method" value="Credit / Debit Card" class="form-check-input mt-0" checked>
+                            <i class="fa-regular fa-credit-card fs-4 text-primary"></i>
+                            <div>
+                                <div class="fw-bold small">Credit or Debit Card</div>
+                                <div class="text-muted small">Safe instant authorization (Simulated)</div>
+                            </div>
+                            <div class="ms-auto d-flex gap-1 text-muted fs-5">
+                                <i class="fa-brands fa-cc-visa"></i>
+                                <i class="fa-brands fa-cc-mastercard"></i>
+                            </div>
+                        </label>
+
+                        <label class="border rounded-3 p-3 d-flex align-items-center gap-3 cursor-pointer">
+                            <input type="radio" name="payment_method" value="UPI / Instant Bank Transfer" class="form-check-input mt-0">
+                            <i class="fa-solid fa-mobile-screen fs-4 text-success"></i>
+                            <div>
+                                <div class="fw-bold small">UPI / Instant Bank Pay</div>
+                                <div class="text-muted small">Fast digital payment transfer</div>
+                            </div>
+                        </label>
+
+                        <label class="border rounded-3 p-3 d-flex align-items-center gap-3 cursor-pointer">
+                            <input type="radio" name="payment_method" value="Cash on Delivery" class="form-check-input mt-0">
+                            <i class="fa-solid fa-hand-holding-dollar fs-4 text-warning"></i>
+                            <div>
+                                <div class="fw-bold small">Cash on Delivery (COD)</div>
+                                <div class="text-muted small">Pay securely in cash at your doorstep</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" id="placeOrderBtn" class="btn btn-primary btn-lg rounded-pill fw-bold py-3 shadow">
+                            <i class="fa-solid fa-lock me-2"></i> Complete Order
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right: Order Summary Sidebar -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white sticky-top" style="top: 90px;">
+                <h5 class="fw-bold mb-3 d-flex justify-content-between align-items-center">
+                    Order Summary
+                    <a href="{{ url_for('storefront') }}" class="btn btn-sm btn-link text-decoration-none text-primary">Edit Items</a>
+                </h5>
+
+                <!-- Dynamic Items from Cart -->
+                <div id="checkoutSummaryItems" class="mb-3">
+                    <div class="text-center py-4 text-muted">
+                        <div class="spinner-border spinner-border-sm text-primary mb-2"></div>
+                        <p class="small">Loading cart items...</p>
+                    </div>
+                </div>
+
+                <!-- Price Calculations -->
+                <div class="d-flex justify-content-between text-muted small mb-2">
+                    <span>Items Subtotal</span>
+                    <span id="checkoutSubtotal" class="fw-semibold text-dark">$0.00</span>
+                </div>
+                <div class="d-flex justify-content-between text-muted small mb-2">
+                    <span>Estimated Shipping</span>
+                    <span id="checkoutShipping" class="fw-semibold text-success">FREE</span>
+                </div>
+                <hr class="my-2">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <span class="fw-bold fs-5 text-dark">Total</span>
+                    <span id="checkoutTotal" class="fw-extrabold fs-4 text-primary">$0.00</span>
+                </div>
+
+                <!-- Guarantee Badges -->
+                <div class="bg-light rounded-3 p-3 text-secondary small d-flex flex-column gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-shield-check text-success"></i>
+                        <span>Guaranteed 256-bit Secure Checkout</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-truck-ramp-box text-primary"></i>
+                        <span>Real-time tracking link generated instantly</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-rotate-left text-info"></i>
+                        <span>30-day hassle-free return policy</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

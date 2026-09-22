@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Order Tracking #{{ order.id }} - NovaStore{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Top Breadcrumb & Status Summary -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb small mb-1">
+                    <li class="breadcrumb-item"><a href="{{ url_for('storefront') }}" class="text-decoration-none text-muted">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('track_lookup') }}" class="text-decoration-none text-muted">Track Orders</a></li>
+                    <li class="breadcrumb-item active fw-semibold" aria-current="page">{{ order.id }}</li>
+                </ol>
+            </nav>
+            <h2 class="fw-extrabold text-dark mb-0 d-flex align-items-center gap-3">
+                Order <span class="text-primary">#{{ order.id }}</span>
+                <span class="badge {% if order.status == 'Delivered' %}bg-success{% elif order.status == 'Shipped' or order.status == 'Out for Delivery' %}bg-primary{% elif order.status == 'Cancelled' %}bg-danger{% else %}bg-warning text-dark{% endif %} rounded-pill px-3 py-1 fs-6">
+                    {{ order.status }}
+                </span>
+            </h2>
+        </div>
+
+        <div class="mt-3 mt-md-0 d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-outline-secondary rounded-pill btn-sm px-3">
+                <i class="fa-solid fa-print me-1"></i> Print Receipt
+            </button>
+            <a href="{{ url_for('track_lookup') }}" class="btn btn-primary rounded-pill btn-sm px-3">
+                <i class="fa-solid fa-magnifying-glass me-1"></i> Track Another
+            </a>
+        </div>
+    </div>
+
+    <!-- Stepper Card -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+        {% if is_cancelled %}
+            <div class="alert alert-danger rounded-3 mb-0 d-flex align-items-center gap-3">
+                <i class="fa-solid fa-triangle-exclamation fa-2x"></i>
+                <div>
+                    <h5 class="fw-bold mb-1">This order has been cancelled</h5>
+                    <p class="mb-0 small">A refund has been initiated to your original payment method. If you have questions, please reach out to customer support.</p>
+                </div>
+            </div>
+        {% else %}
+            <h5 class="fw-bold mb-0 text-dark">Live Delivery Progress</h5>
+            <p class="text-muted small mb-4">Estimated updates synced with our central distribution facility.</p>
+
+            <!-- Stepper Container -->
+            <div class="timeline-stepper">
+                {% set percent = (current_index / (status_flow|length - 1)) * 100 if current_index >= 0 else 0 %}
+                <div class="timeline-progress-bar" style="width: {{ percent }}%;"></div>
+
+                {% set step_icons = {
+                    'Placed': 'fa-solid fa-receipt',
+                    'Processing': 'fa-solid fa-box-open',
+                    'Shipped': 'fa-solid fa-truck-fast',
+                    'Out for Delivery': 'fa-solid fa-person-walking-luggage',
+                    'Delivered': 'fa-solid fa-house-circle-check'
+                } %}
+
+                {% for status_name in status_flow %}
+                    {% set step_index = loop.index0 %}
+                    <div class="timeline-step {% if step_index < current_index %}completed{% elif step_index == current_index %}current{% endif %}">
+                        <div class="step-icon-circle">
+                            {% if step_index < current_index %}
+                                <i class="fa-solid fa-check"></i>
+                            {% else %}
+                                <i class="{{ step_icons.get(status_name, 'fa-solid fa-circle') }}"></i>
+                            {% endif %}
+                        </div>
+                        <div class="step-label">{{ status_name }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="row g-4">
+        <!-- Order Items Breakdown -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+                <h5 class="fw-bold mb-3">Purchased Items ({{ order.items|length }})</h5>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="table-light small text-muted">
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-center">Price</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ item.product_name }}</div>
+                                    <span class="text-muted small">Item SKU #{{ item.product_id if item.product_id else 'GEN' }}</span>
+                                </td>
+                                <td class="text-center">${{ "%.2f"|format(item.price_at_purchase) }}</td>
+                                <td class="text-center"><span class="badge bg-light text-dark px-2 py-1">{{ item.quantity }}</span></td>
+                                <td class="text-end fw-bold">${{ "%.2f"|format(item.subtotal) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-end text-muted small">Items Total:</td>
+                                <td class="text-end fw-bold">${{ "%.2f"|format(order.total_amount) }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-end text-muted small">Shipping & Handling:</td>
+                                <td class="text-end fw-bold text-success">FREE</td>
+                            </tr>
+                            <tr class="border-top border-2">
+                                <td colspan="3" class="text-end fs-6 fw-bold">Grand Total Paid:</td>
+                                <td class="text-end fs-5 fw-extrabold text-primary">${{ "%.2f"|format(order.total_amount) }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Detailed Status History Log -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <h5 class="fw-bold mb-4 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-list-check text-primary"></i> Activity Log & Checkpoints
+                </h5>
+                <div class="history-timeline">
+                    {% for h in order.history %}
+                    <div class="history-item">
+                        <div class="history-dot"></div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-dark">{{ h.status }}</span>
+                            <span class="text-muted small"><i class="fa-regular fa-clock me-1"></i> {{ h.timestamp.strftime('%b %d, %Y - %I:%M %p') }}</span>
+                        </div>
+                        <p class="text-muted small mb-0">{{ h.notes }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Order & Delivery Info Sidebar -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+                <h6 class="text-uppercase text-muted fw-bold small mb-3">Customer Details</h6>
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="rounded-circle bg-primary-subtle text-primary p-3">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark">{{ order.customer_name }}</div>
+                        <div class="text-muted small">{{ order.customer_email }}</div>
+                        <div class="text-muted small">{{ order.customer_phone }}</div>
+                    </div>
+                </div>
+
+                <hr class="my-3">
+
+                <h6 class="text-uppercase text-muted fw-bold small mb-3">Shipping Destination</h6>
+                <div class="d-flex gap-3 mb-3">
+                    <div class="rounded-circle bg-light p-3 text-secondary">
+                        <i class="fa-solid fa-location-dot"></i>
+                    </div>
+                    <div class="small text-secondary">
+                        {{ order.shipping_address }}
+                    </div>
+                </div>
+
+                <hr class="my-3">
+
+                <h6 class="text-uppercase text-muted fw-bold small mb-3">Payment Information</h6>
+                <div class="d-flex align-items-center justify-content-between small">
+                    <span class="text-muted">Payment Method:</span>
+                    <span class="fw-semibold text-dark">{{ order.payment_method }}</span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between small mt-2">
+                    <span class="text-muted">Order Placed:</span>
+                    <span class="text-secondary">{{ order.created_at.strftime('%b %d, %Y') }}</span>
+                </div>
+                <div class="d-flex align-items-center justify-content-between small mt-2">
+                    <span class="text-muted">Last Updated:</span>
+                    <span class="text-secondary">{{ order.updated_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+                </div>
+            </div>
+
+            <!-- Store Support Box -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-primary text-white">
+                <h6 class="fw-bold mb-2"><i class="fa-solid fa-circle-question me-1"></i> Questions about delivery?</h6>
+                <p class="small text-white-50 mb-3">Our support team is on standby 24/7 to help you resolve any shipping questions.</p>
+                <a href="mailto:support@novastore.local?subject=Inquiry for Order {{ order.id }}" class="btn btn-light rounded-pill btn-sm fw-semibold text-primary">
+                    Contact Support
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

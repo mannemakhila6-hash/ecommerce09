@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}NovaStore - Premium Products & Fast Delivery{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Hero Banner -->
+    <div class="hero-section p-4 p-md-5 mb-5 shadow-sm">
+        <div class="row align-items-center position-relative" style="z-index: 2;">
+            <div class="col-lg-7">
+                <span class="badge bg-white text-primary px-3 py-2 rounded-pill fw-semibold mb-3">
+                    <i class="fa-solid fa-sparkles me-1 text-warning"></i> Next-Gen Shopping Experience
+                </span>
+                <h1 class="display-5 fw-extrabold mb-3">Curated Essentials for Modern Living</h1>
+                <p class="lead text-white-50 mb-4">Discover high-grade electronics, refined apparel, and home essentials with end-to-end real-time tracking.</p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="#catalog" class="btn btn-light btn-lg rounded-pill px-4 fw-bold text-primary shadow">
+                        Shop Collection <i class="fa-solid fa-arrow-down ms-2"></i>
+                    </a>
+                    <a href="{{ url_for('track_lookup') }}" class="btn btn-outline-light btn-lg rounded-pill px-4">
+                        <i class="fa-solid fa-location-dot me-2"></i> Track an Order
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-block text-center">
+                <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80" 
+                     class="img-fluid rounded-4 shadow-lg" 
+                     style="max-height: 280px; transform: rotate(3deg);" 
+                     alt="Featured Product">
+            </div>
+        </div>
+    </div>
+
+    <!-- Catalog Section Anchor -->
+    <div id="catalog" class="pt-2"></div>
+
+    <!-- Search, Filter & Sort Controls -->
+    <div class="row g-3 align-items-center justify-content-between mb-4">
+        <!-- Categories Filter -->
+        <div class="col-lg-7 d-flex flex-wrap gap-2">
+            <a href="{{ url_for('storefront', q=search_query, sort=sort_by) }}" 
+               class="category-pill {% if not active_category %}active{% endif %}">
+                <i class="fa-solid fa-grid-2"></i> All Products
+            </a>
+            {% for cat in all_categories %}
+                <a href="{{ url_for('storefront', category=cat, q=search_query, sort=sort_by) }}" 
+                   class="category-pill {% if active_category == cat %}active{% endif %}">
+                    {{ cat }}
+                </a>
+            {% endfor %}
+        </div>
+
+        <!-- Search & Sort Row -->
+        <div class="col-lg-5 d-flex gap-2">
+            <!-- Search Input -->
+            <form action="{{ url_for('storefront') }}" method="GET" class="flex-grow-1 position-relative">
+                {% if active_category %}
+                    <input type="hidden" name="category" value="{{ active_category }}">
+                {% endif %}
+                <input type="hidden" name="sort" value="{{ sort_by }}">
+                <input type="text" name="q" class="form-control rounded-pill ps-4" 
+                       placeholder="Search products..." value="{{ search_query }}">
+                <button type="submit" class="btn position-absolute top-50 end-0 translate-middle-y me-1 border-0 text-muted">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+            </form>
+
+            <!-- Sort Dropdown -->
+            <div class="dropdown">
+                <button class="btn btn-white border rounded-pill dropdown-toggle px-3 text-secondary" type="button" data-bs-toggle="dropdown">
+                    <i class="fa-solid fa-arrow-down-short-wide me-1"></i> Sort
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                    <li><a class="dropdown-item {% if sort_by == 'newest' %}active{% endif %}" href="{{ url_for('storefront', category=active_category, q=search_query, sort='newest') }}">Newest Arrivals</a></li>
+                    <li><a class="dropdown-item {% if sort_by == 'price_asc' %}active{% endif %}" href="{{ url_for('storefront', category=active_category, q=search_query, sort='price_asc') }}">Price: Low to High</a></li>
+                    <li><a class="dropdown-item {% if sort_by == 'price_desc' %}active{% endif %}" href="{{ url_for('storefront', category=active_category, q=search_query, sort='price_desc') }}">Price: High to Low</a></li>
+                    <li><a class="dropdown-item {% if sort_by == 'name_asc' %}active{% endif %}" href="{{ url_for('storefront', category=active_category, q=search_query, sort='name_asc') }}">Name: A to Z</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Filters Feedback -->
+    {% if active_category or search_query %}
+    <div class="d-flex align-items-center gap-2 mb-4 bg-white p-2 px-3 rounded-pill border shadow-sm">
+        <span class="text-muted small">Active Filters:</span>
+        {% if active_category %}
+            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1">
+                Category: {{ active_category }}
+                <a href="{{ url_for('storefront', q=search_query, sort=sort_by) }}" class="text-primary ms-1"><i class="fa-solid fa-xmark"></i></a>
+            </span>
+        {% endif %}
+        {% if search_query %}
+            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1">
+                Query: "{{ search_query }}"
+                <a href="{{ url_for('storefront', category=active_category, sort=sort_by) }}" class="text-primary ms-1"><i class="fa-solid fa-xmark"></i></a>
+            </span>
+        {% endif %}
+        <a href="{{ url_for('storefront') }}" class="btn btn-link btn-sm text-decoration-none ms-auto text-danger p-0 small">Clear All</a>
+    </div>
+    {% endif %}
+
+    <!-- Products Grid -->
+    {% if products %}
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for product in products %}
+        <div class="col">
+            <div class="product-card">
+                <!-- Image Wrapper -->
+                <div class="product-img-wrapper">
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}" loading="lazy">
+                    <span class="badge bg-dark bg-opacity-75 rounded-pill product-badge">
+                        {{ product.category }}
+                    </span>
+                    {% if product.stock_quantity == 0 %}
+                        <span class="badge bg-danger rounded-pill position-absolute top-0 end-0 m-3">
+                            Out of Stock
+                        </span>
+                    {% elif product.stock_quantity <= 5 %}
+                        <span class="badge bg-warning text-dark rounded-pill position-absolute top-0 end-0 m-3">
+                            Only {{ product.stock_quantity }} left!
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Card Body -->
+                <div class="p-3 d-flex flex-column flex-grow-1">
+                    <h5 class="fw-bold mb-1 text-truncate text-dark" title="{{ product.name }}">{{ product.name }}</h5>
+                    <p class="text-muted small mb-3 flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                        {{ product.description }}
+                    </p>
+
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <span class="text-muted small">Price</span>
+                            <div class="fs-5 fw-bold text-primary">${{ "%.2f"|format(product.price) }}</div>
+                        </div>
+                        <span class="badge {% if product.stock_quantity > 5 %}bg-success-subtle text-success{% elif product.stock_quantity > 0 %}bg-warning-subtle text-warning{% else %}bg-danger-subtle text-danger{% endif %} rounded-pill px-2 py-1 small">
+                            {% if product.stock_quantity > 5 %}
+                                In Stock ({{ product.stock_quantity }})
+                            {% elif product.stock_quantity > 0 %}
+                                Low Stock ({{ product.stock_quantity }})
+                            {% else %}
+                                Sold Out
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" 
+                                onclick="openQuickView({{ product.id }})" 
+                                title="Quick View">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+
+                        {% if product.stock_quantity > 0 %}
+                        <button class="btn btn-primary btn-sm rounded-pill flex-grow-1 fw-semibold d-flex align-items-center justify-content-center gap-2"
+                                onclick='cartManager.addItem({{ {"id": product.id, "name": product.name, "price": product.price, "image_url": product.image_url, "stock": product.stock_quantity}|tojson }})'>
+                            <i class="fa-solid fa-cart-plus"></i> Add to Cart
+                        </button>
+                        {% else %}
+                        <button class="btn btn-secondary btn-sm rounded-pill flex-grow-1 disabled" disabled>
+                            Out of Stock
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5 my-5 bg-white rounded-4 border">
+        <i class="fa-solid fa-box-open fa-4x text-muted opacity-50 mb-3"></i>
+        <h4 class="fw-bold">No Products Found</h4>
+        <p class="text-muted">We couldn't find any products matching your current search or filter criteria.</p>
+        <a href="{{ url_for('storefront') }}" class="btn btn-primary rounded-pill px-4 mt-2">View All Products</a>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Quick View Modal -->
+<div class="modal fade" id="quickViewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 pt-0">
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-6 text-center">
+                        <img id="qvImage" src="" class="img-fluid rounded-3 shadow-sm" style="max-height: 320px; object-fit: cover;" alt="Product preview">
+                    </div>
+                    <div class="col-md-6">
+                        <span id="qvCategory" class="badge bg-primary-subtle text-primary rounded-pill mb-2 px-3 py-1"></span>
+                        <h4 id="qvName" class="fw-bold text-dark mb-2"></h4>
+                        <div class="d-flex align-items-baseline gap-3 mb-3">
+                            <h3 id="qvPrice" class="text-primary fw-bold mb-0"></h3>
+                            <span id="qvStock" class="badge rounded-pill"></span>
+                        </div>
+                        <p id="qvDescription" class="text-muted small mb-4"></p>
+                        <div id="qvActionContainer"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function openQuickView(productId) {
+    try {
+        const response = await fetch(`/product/${productId}`);
+        if (!response.ok) return;
+        const p = await response.json();
+
+        document.getElementById('qvImage').src = p.image_url;
+        document.getElementById('qvCategory').innerText = p.category;
+        document.getElementById('qvName').innerText = p.name;
+        document.getElementById('qvPrice').innerText = `$${parseFloat(p.price).toFixed(2)}`;
+        document.getElementById('qvDescription').innerText = p.description || 'No detailed description available.';
+
+        const stockBadge = document.getElementById('qvStock');
+        const actionContainer = document.getElementById('qvActionContainer');
+
+        if (p.stock_quantity > 0) {
+            stockBadge.className = 'badge bg-success-subtle text-success rounded-pill';
+            stockBadge.innerText = `${p.stock_quantity} available in stock`;
+
+            actionContainer.innerHTML = `
+                <button class="btn btn-primary rounded-pill px-4 py-2 fw-semibold w-100" 
+                        onclick='cartManager.addItem(${JSON.stringify({id: p.id, name: p.name, price: p.price, image_url: p.image_url, stock: p.stock_quantity})}); bootstrap.Modal.getInstance(document.getElementById("quickViewModal")).hide();'>
+                    <i class="fa-solid fa-cart-plus me-2"></i> Add to Cart
+                </button>
+            `;
+        } else {
+            stockBadge.className = 'badge bg-danger-subtle text-danger rounded-pill';
+            stockBadge.innerText = 'Out of Stock';
+
+            actionContainer.innerHTML = `
+                <button class="btn btn-secondary rounded-pill px-4 py-2 w-100 disabled" disabled>
+                    Currently Out of Stock
+                </button>
+            `;
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('quickViewModal'));
+        modal.show();
+    } catch (err) {
+        console.error('Quick view fetch error', err);
+    }
+}
+</script>
+{% endblock %}
